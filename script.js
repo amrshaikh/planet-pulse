@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showLoading() {
         if (searchButton) {
-            searchButton.disabled =. true;
+            searchButton.disabled = true;
             searchButton.textContent = 'Checking...';
         }
         if (loadingSpinner) {
