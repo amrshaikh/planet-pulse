@@ -1,0 +1,15 @@
+{
+  "name": "planet-pulse",
+  "version": "1.0.0",
+  "description": "AI Sustainability Dashboard",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.0.0"
+  }
+}
+
