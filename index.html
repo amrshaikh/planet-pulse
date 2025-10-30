@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanetPulse - AI Sustainability Dashboard</title>
+    
+    <!-- Google Font: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- All CSS is embedded here -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>PlanetPulse 🌍</h1>
+        <p>Your AI-powered environmental health check</p>
+    </header>
+
+    <main>
+        <div class="search-container">
+            <input type="text" id="city-input" placeholder="Enter a city name (e.g., London)">
+            <button id="search-button">Check Pulse</button>
+            <div id="error-message"></div>
+        </div>
+
+        <!-- This is a placeholder for our CSS illustration -->
+        <div class="illustration-placeholder hidden" id="illustration-area">
+            <div class="planet-drawing">
+                <div class="land"></div>
+                <div class="land"></div>
+                <div class="land"></div>
+            </div>
+        </div>
+
+        <!-- The results will be dynamically injected here by JavaScript -->
+        <div id="results-container">
+            
+            <div id="loading-spinner" class.bind="hidden"></div>
+
+            <!-- AI Summary will appear here -->
+            <div id="ai-summary" class="result-card hidden">
+                <h2><span class="icon">🤖</span> AI Health Summary</h2>
+                <p id="summary-text">Waiting for data...</p>
+            </div>
+
+            <!-- Raw Data will appear here -->
+            <div id="raw-data" class="result-card hidden">
+                <h2><span class="icon">📊</span> Live Data Snapshot</h2>
+                <ul id="data-list">
+                    <!-- Data will be populated by JS -->
+                </ul>
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>Built for the Octopus Hackathon 🐙</p>
+    </footer>
+
+    <!-- All JavaScript is embedded here -->
+    <script src="script.js"></script>
+</body>
+</html>
+
