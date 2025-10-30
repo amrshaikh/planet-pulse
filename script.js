@@ -85,8 +85,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- 3. Show AI Summary ---
-        // This will now be the REAL summary from Gemini!
-        summaryText.innerHTML = summary || "AI analysis could not be generated.";
+        if (summary) {
+            // THIS IS THE FIX!
+            // Convert Markdown (**) to HTML (<strong>)
+            const htmlSummary = summary
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
+
+            summaryText.innerHTML = htmlSummary;
+        } else {
+            summaryText.innerHTML = "AI analysis could not be generated.";
+        }
         aiSummaryCard.classList.remove('hidden');
     }
 
@@ -135,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showLoading() {
         if (searchButton) {
-            searchButton.disabled = true;
+            searchButton.disabled = true;   // <--- This is the fix from before
             searchButton.textContent = 'Checking...';
         }
         if (loadingSpinner) {
@@ -168,4 +177,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 }); // End of DOMContentLoaded
+
 

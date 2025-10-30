@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
+    
     <title>PlanetPulse - AI Sustainability Dashboard</title>
     
     <!-- Google Font: Poppins -->
@@ -10,7 +13,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- All CSS is embedded here -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,35 +26,27 @@
         <div class="search-container">
             <input type="text" id="city-input" placeholder="Enter a city name (e.g., London)">
             <button id="search-button">Check Pulse</button>
-            <div id="error-message"></div>
         </div>
 
-        <!-- This is a placeholder for our CSS illustration -->
-        <div class="illustration-placeholder hidden" id="illustration-area">
-            <div class="planet-drawing">
-                <div class="land"></div>
-                <div class="land"></div>
-                <div class="land"></div>
-            </div>
+        <!-- NEW: Canvas element for our gauge -->
+        <div id="gauge-container" class="hidden">
+            <h3>Overall Environmental Score</h3>
+            <canvas id="health-gauge" width="250" height="200"></canvas>
         </div>
 
         <!-- The results will be dynamically injected here by JavaScript -->
         <div id="results-container">
             
-            <div id="loading-spinner" class.bind="hidden"></div>
+            <div id="loading-spinner" class="hidden"></div>
 
-            <!-- AI Summary will appear here -->
             <div id="ai-summary" class="result-card hidden">
                 <h2><span class="icon">🤖</span> AI Health Summary</h2>
-                <p id="summary-text">Waiting for data...</p>
+                <p id="summary-text"></p>
             </div>
 
-            <!-- Raw Data will appear here -->
             <div id="raw-data" class="result-card hidden">
                 <h2><span class="icon">📊</span> Live Data Snapshot</h2>
-                <ul id="data-list">
-                    <!-- Data will be populated by JS -->
-                </ul>
+                <ul id="data-list"></ul>
             </div>
 
         </div>
@@ -62,8 +56,9 @@
         <p>Built for the Octopus Hackathon 🐙</p>
     </footer>
 
-    <!-- All JavaScript is embedded here -->
-    <script src="script.js"></script>
+    <!-- We MUST link our JavaScript file now -->
+    <script src="script.js"></script> 
 </body>
 </html>
+
 
