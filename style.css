@@ -10,7 +10,6 @@ body {
     line-height: 1.6;
     margin: 0;
     padding: 0;
-    transition: background-color 0.5s;
 }
 
 /* Header */
@@ -47,7 +46,6 @@ main {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 2rem;
-    position: relative;
 }
 #city-input {
     flex-grow: 1;
@@ -85,68 +83,6 @@ main {
     box-shadow: 0 2px 10px rgba(38, 70, 83, 0.4);
 }
 
-/* This is the error message box, positioned absolutely */
-#error-message {
-    position: absolute;
-    bottom: -35px;
-    left: 10px;
-    font-size: 0.9rem;
-    color: #d90429;
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-/* --- Illustration Placeholder --- */
-.illustration-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem 0;
-    animation: fadeIn 1s ease-in-out;
-}
-.planet-drawing {
-    width: 150px;
-    height: 150px;
-    background-color: #89c2d9; /* Light blue for water */
-    border-radius: 50%;
-    position: relative;
-    overflow: hidden;
-    border: 5px solid #fff;
-    box-shadow: 0 0 25px rgba(137, 194, 217, 0.7);
-    animation: rotate-planet 30s linear infinite;
-}
-.planet-drawing .land {
-    position: absolute;
-    width: 60px;
-    height: 50px;
-    background-color: #6a994e; /* Green for land */
-    border-radius: 40%;
-}
-.planet-drawing .land:nth-child(1) {
-    top: 20px;
-    left: 10px;
-    transform: rotate(20deg);
-}
-.planet-drawing .land:nth-child(2) {
-    top: 80px;
-    left: 70px;
-    transform: rotate(-30deg);
-    width: 80px;
-}
-.planet-drawing .land:nth-child(3) {
-    top: 40px;
-    left: 120px; /* Off-screen to rotate in */
-    transform: rotate(10deg);
-    width: 50px;
-    height: 70px;
-}
-
-@keyframes rotate-planet {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
 /* --- Results Cards --- */
 .result-card {
     background-color: #ffffff;
@@ -162,6 +98,7 @@ main {
     animation: fadeIn 0.5s ease-out forwards;
 }
 
+/* This is the animation definition */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -195,11 +132,16 @@ main {
     margin-bottom: 0.75rem;
     font-weight: 400;
 }
-/* Dynamic icons for data points */
-#data-list li.aqi::before { content: '🌬️'; margin-right: 10px; }
-#data-list li.temp::before { content: '🌡️'; margin-right: 10px; }
-#data-list li.humidity::before { content: '💧'; margin-right: 10px; }
-#data-list li.uv::before { content: '☀️'; margin-right: 10px; }
+/* New label style */
+#data-list li .data-label {
+    font-weight: 600;
+    color: #333;
+    margin-right: 8px;
+}
+#data-list li::before {
+    content: '🌿'; /* Leaf emoji for theme */
+    margin-right: 10px;
+}
 
 #summary-text {
     font-size: 1.1rem;
@@ -233,3 +175,19 @@ footer {
     padding-bottom: 2rem;
     color: #aaa;
 }
+
+
+/* --- NEW CSS RULE TO CENTER THE GAUGE --- */
+#gauge-container {
+    text-align: center; /* This centers the h3 and the canvas */
+    animation: fadeIn 0.5s ease-out forwards; /* Add the same fade-in */
+    margin-bottom: 1.5rem; /* Match spacing */
+}
+
+#gauge-container h3 {
+    color: #264653; /* Match the style of the other card headers */
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem; /* Space between title and gauge */
+}
+
