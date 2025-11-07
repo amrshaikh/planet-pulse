@@ -191,3 +191,38 @@ footer {
     margin-bottom: 0.5rem; /* Space between title and gauge */
 }
 
+
+/* --- (THIS IS THE NEW CODE) --- */
+/* --- Mobile Responsiveness --- */
+
+@media (max-width: 600px) {
+
+    /* Stack the search bar on mobile */
+    .search-container {
+        flex-direction: column; /* Stack input and button */
+        gap: 1rem; /* Add a bit more space since they are stacked */
+    }
+
+    /* Reduce padding on cards so text has room */
+    .result-card {
+        padding: 1.5rem 1.25rem; /* Reduced L/R padding from 2rem */
+    }
+
+    /* Make the header title smaller */
+    header h1 {
+        font-size: 2.2rem; /* Reduced from 2.8rem */
+    }
+
+    /* Make body font slightly smaller */
+    #data-list li, 
+    #summary-text, 
+    #city-input, 
+    #search-button {
+        font-size: 1rem; /* Reduced from 1.1rem */
+    }
+
+    /* Reduce padding on main content area */
+    main {
+        padding: 0.5rem;
+    }
+}
