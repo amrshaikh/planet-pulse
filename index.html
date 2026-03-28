@@ -1,64 +1,134 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dawn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
-    
-    <title>PlanetPulse - AI Sustainability Dashboard</title>
-    
-    <!-- Google Font: Poppins -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+    <title>PlanetPulse | AI Sustainability Dashboard</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
+    <div class="ambient-background">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
 
-    <header>
-        <h1>PlanetPulse 🌍</h1>
-        <p>Your AI-powered environmental health check</p>
-    </header>
+    <div class="container">
+        <nav>
+            <button id="theme-toggle" class="glass-btn icon-btn" aria-label="Toggle Theme">
+                <svg id="icon-moon" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <svg id="icon-sun" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
+        </nav>
 
-    <main>
-        <div class="search-container">
-            <input type="text" id="city-input" placeholder="Enter a city name (e.g., London)">
-            <button id="search-button">Check Pulse</button>
-        </div>
+        <header>
+            <h1 class="display-font">PlanetPulse</h1>
+            <p>Your AI-powered environmental health check.</p>
+        </header>
 
-        <!-- NEW: Canvas element for our gauge -->
-        <div id="gauge-container" class="hidden">
-            <h3>Overall Environmental Score</h3>
-            <canvas id="health-gauge" width="250" height="200"></canvas>
-        </div>
+        <main>
+            <section class="command-center">
+                <div class="search-wrapper">
+                    <input type="text" id="city-input" placeholder="Breathe in a location..." autocomplete="off">
+                    <div id="autocomplete-results" class="autocomplete-dropdown glass-panel"></div>
+                </div>
+            </section>
 
-        <!-- The results will be dynamically injected here by JavaScript -->
-        <div id="results-container">
-            
-            <div id="loading-spinner" class="hidden"></div>
-
-            <div id="ai-summary" class="result-card hidden">
-                <h2><span class="icon">🤖</span> AI Health Summary</h2>
-                <p id="summary-text"></p>
+            <div id="loader" class="loader">
+                <div class="loader-ring"></div>
+                <div class="loader-text">Sensing atmosphere...</div>
             </div>
 
-            <div id="raw-data" class="result-card hidden">
-                <h2><span class="icon">📊</span> Live Data Snapshot</h2>
-                <ul id="data-list"></ul>
-            </div>
+            <section id="dashboard" class="dashboard">
+                <div class="panel glass-panel">
+                    <div class="panel-title">Air Quality Index</div>
+                    <div class="aqi-wrapper">
+                        <div id="aqi-val" class="aqi-value">--</div>
+                        <div id="aqi-lbl" class="aqi-label">--</div>
+                    </div>
 
-        </div>
-    </main>
+                    <div class="stat-grid">
+                        <div class="stat-block">
+                            <span class="stat-lbl">Temp</span>
+                            <span id="stat-temp" class="stat-val">--</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-lbl">Humidity</span>
+                            <span id="stat-hum" class="stat-val">--</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-lbl">Max UV</span>
+                            <span id="stat-uv" class="stat-val">--</span>
+                        </div>
+                    </div>
+                </div>
 
-    <footer>
-        <p>Built for the Octopus Hackathon 🐙</p>
-    </footer>
+                <div class="panel glass-panel">
+                    <div class="panel-title">Specific Pollutants</div>
 
-    <!-- We MUST link our JavaScript file now -->
-    <script src="script.js"></script> 
+                    <div class="pollutant-row">
+                        <div class="pollutant-header"><span>PM2.5</span> <span id="val-pm25" class="pollutant-val">--</span></div>
+                        <div class="progress-track"><div id="bar-pm25" class="progress-fill"></div></div>
+                    </div>
+                    <div class="pollutant-row">
+                        <div class="pollutant-header"><span>PM10</span> <span id="val-pm10" class="pollutant-val">--</span></div>
+                        <div class="progress-track"><div id="bar-pm10" class="progress-fill"></div></div>
+                    </div>
+                    <div class="pollutant-row">
+                        <div class="pollutant-header"><span>Ozone (O3)</span> <span id="val-o3" class="pollutant-val">--</span></div>
+                        <div class="progress-track"><div id="bar-o3" class="progress-fill"></div></div>
+                    </div>
+                    <div class="pollutant-row">
+                        <div class="pollutant-header"><span>Carbon Monoxide</span> <span id="val-co" class="pollutant-val">--</span></div>
+                        <div class="progress-track"><div id="bar-co" class="progress-fill"></div></div>
+                    </div>
+                </div>
+
+                <div class="panel glass-panel panel-full">
+                    <div class="panel-title">Gemini Protocol & Guidance</div>
+
+                    <div id="ai-synopsis" class="ai-text">Awaiting flow...</div>
+
+                    <ul id="ai-checklist" class="organic-checklist"></ul>
+
+                    <div class="eco-advice">
+                        <div class="eco-icon">🌱</div>
+                        <div id="ai-advice" class="eco-text">--</div>
+                    </div>
+                </div>
+
+                <div class="panel glass-panel panel-full">
+                    <div class="panel-title">24-Hour Flow</div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>Built for the Octoverse Hackathon <span class="octopus">🐙</span></p>
+        </footer>
+    </div>
+
+    <script src="./script.js"></script>
 </body>
 </html>
-
-

@@ -1,181 +1,308 @@
-document.addEventListener('DOMContentLoaded', () => {
+// App state
+let currentTheme = localStorage.getItem('organicTheme') || 'dawn';
+let debounceTimer;
+let chartInstance = null;
+let lastData = {};
 
-    // --- DOM Elements ---
-    const cityInput = document.getElementById('city-input');
-    const searchButton = document.getElementById('search-button');
-    const loadingSpinner = document.getElementById('loading-spinner');
-    const gaugeContainer = document.getElementById('gauge-container');
-    const aqiGauge = document.getElementById('health-gauge');
-    const aiSummaryCard = document.getElementById('ai-summary');
-    const summaryText = document.getElementById('summary-text');
-    const rawDataCard = document.getElementById('raw-data');
-    const dataList = document.getElementById('data-list');
+const aqiLabels = {
+  good: 'Pure',
+  moderate: 'Fair',
+  unhealthySg: 'Hazy',
+  unhealthy: 'Unhealthy',
+  veryUnhealthy: 'Severe',
+  hazardous: 'Toxic'
+};
 
-    // --- Event Listeners ---
-    if (searchButton) {
-        searchButton.addEventListener('click', handleSearch);
+const els = {
+  html: document.documentElement,
+  themeBtn: document.getElementById('theme-toggle'),
+  searchInput: document.getElementById('city-input'),
+  dropdown: document.getElementById('autocomplete-results'),
+  dashboard: document.getElementById('dashboard'),
+  loader: document.getElementById('loader'),
+
+  aqiVal: document.getElementById('aqi-val'),
+  aqiLbl: document.getElementById('aqi-lbl'),
+
+  aiSynopsis: document.getElementById('ai-synopsis'),
+  aiChecklist: document.getElementById('ai-checklist'),
+  aiAdvice: document.getElementById('ai-advice'),
+
+  valPm25: document.getElementById('val-pm25'),
+  barPm25: document.getElementById('bar-pm25'),
+  valPm10: document.getElementById('val-pm10'),
+  barPm10: document.getElementById('bar-pm10'),
+  valO3: document.getElementById('val-o3'),
+  barO3: document.getElementById('bar-o3'),
+  valCo: document.getElementById('val-co'),
+  barCo: document.getElementById('bar-co'),
+
+  statTemp: document.getElementById('stat-temp'),
+  statHum: document.getElementById('stat-hum'),
+  statUv: document.getElementById('stat-uv'),
+  ctx: document.getElementById('trendChart').getContext('2d')
+};
+
+function init() {
+  setTheme(currentTheme);
+
+  els.themeBtn.addEventListener('click', () => {
+    currentTheme = currentTheme === 'dawn' ? 'dusk' : 'dawn';
+    setTheme(currentTheme);
+  });
+
+  els.searchInput.addEventListener('input', handleInput);
+  document.addEventListener('click', (e) => {
+    if (!els.searchInput.contains(e.target) && !els.dropdown.contains(e.target)) {
+      els.dropdown.style.display = 'none';
     }
-    if (cityInput) {
-        cityInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
-                handleSearch();
-            }
-        });
+  });
+}
+
+function setTheme(theme) {
+  els.html.setAttribute('data-theme', theme);
+  localStorage.setItem('organicTheme', theme);
+
+  if (chartInstance && lastData.times && lastData.temps && lastData.aqis) {
+    renderChart(lastData.times, lastData.temps, lastData.aqis);
+  }
+}
+
+function handleInput(e) {
+  const val = e.target.value.trim();
+  clearTimeout(debounceTimer);
+
+  if (val.length < 2) {
+    els.dropdown.style.display = 'none';
+    return;
+  }
+
+  debounceTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=4`
+      );
+      const data = await res.json();
+      renderDropdown(data.results || []);
+    } catch (err) {
+      console.error('Autocomplete Error:', err);
     }
+  }, 300);
+}
 
-    /**
-     * Main function to handle the search button click
-     */
-    async function handleSearch() {
-        const city = cityInput.value.trim();
-        if (!city) {
-            alert("Please enter a city name.");
-            return;
-        }
+function renderDropdown(results) {
+  if (results.length === 0) {
+    els.dropdown.style.display = 'none';
+    return;
+  }
 
-        clearUI();
-        showLoading();
+  els.dropdown.innerHTML = results
+    .map(
+      (city) => `
+      <div class="autocomplete-item" data-lat="${city.latitude}" data-lon="${city.longitude}" data-name="${city.name}">
+        <span class="autocomplete-city">${city.name}</span>
+        <span class="autocomplete-admin">${city.admin1 || ''}, ${city.country || ''}</span>
+      </div>
+    `
+    )
+    .join('');
 
-        try {
-            // --- Step 1: Call our NEW Serverless Function ---
-            // This one-line call is safer and gets all data at once
-            const response = await fetch(`/.netlify/functions/getPulse?city=${encodeURIComponent(city)}`);
-            
-            if (!response.ok) {
-                // Try to get a nice error message from the server
-                const errorData = await response.json();
-                throw new Error(errorData.error || `Server error: ${response.statusText}`);
-            }
+  els.dropdown.style.display = 'flex';
 
-            const data = await response.json();
-            
-            // --- Step 2: Update the UI ---
-            updateUI(data.weather, data.aqi, data.summary);
+  document.querySelectorAll('.autocomplete-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const name = item.getAttribute('data-name');
+      const lat = item.getAttribute('data-lat');
+      const lon = item.getAttribute('data-lon');
 
-        } catch (error) {
-            console.error("Error in handleSearch:", error);
-            dataList.innerHTML = `<li>Error: ${error.message}</li>`;
-            rawDataCard.classList.remove('hidden');
-        } finally {
-            hideLoading();
-        }
-    }
+      els.searchInput.value = name;
+      els.dropdown.style.display = 'none';
+      executeSearch(name, lat, lon);
+    });
+  });
+}
 
-    // --- UI Helper Functions ---
+async function executeSearch(cityName, lat, lon) {
+  els.dashboard.classList.remove('active');
+  els.loader.style.display = 'block';
 
-    function updateUI(weather, aqi, summary) {
-        // --- 1. Update Raw Data List ---
-        dataList.innerHTML = ''; // Clear old data
-        
-        if (weather) {
-            dataList.innerHTML += `<li><span class="data-label">Temperature:</span> ${weather.temp} °C</li>`;
-            dataList.innerHTML += `<li><span class="data-label">Humidity:</span> ${weather.humidity} %</li>`;
-            dataList.innerHTML += `<li><span class="data-label">Max UV Index:</span> ${weather.uv}</li>`;
-        }
-        if (aqi) {
-            dataList.innerHTML += `<li><span class="data-label">US AQI:</span> ${aqi.aqi}</li>`;
-        }
-        rawDataCard.classList.remove('hidden');
+  try {
+    const response = await fetch(
+      `/.netlify/functions/getPulse?lat=${lat}&lon=${lon}&city=${encodeURIComponent(cityName)}`
+    );
 
-        // --- 2. Update AQI Gauge ---
-        if (aqi && aqi.aqi !== "N/A" && aqiGauge) {
-            const aqiValue = parseInt(aqi.aqi);
-            drawGauge(aqiValue);
-            gaugeContainer.classList.remove('hidden');
-        }
-
-        // --- 3. Show AI Summary ---
-        if (summary) {
-            // THIS IS THE FIX!
-            // Convert Markdown (**) to HTML (<strong>)
-            const htmlSummary = summary
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-                .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
-
-            summaryText.innerHTML = htmlSummary;
-        } else {
-            summaryText.innerHTML = "AI analysis could not be generated.";
-        }
-        aiSummaryCard.classList.remove('hidden');
-    }
-
-    function drawGauge(aqi) {
-        const ctx = aqiGauge.getContext('2d');
-        const maxValue = 300; 
-        const value = Math.min(aqi, maxValue);
-        const percent = value / maxValue;
-        const angle = percent * Math.PI; 
-        
-        const { color, label } = getAqiInfo(value);
-        
-        ctx.clearRect(0, 0, aqiGauge.width, aqiGauge.height);
-        
-        ctx.beginPath();
-        ctx.arc(125, 125, 80, Math.PI, 2 * Math.PI);
-        ctx.lineWidth = 25;
-        ctx.strokeStyle = '#eee';
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(125, 125, 80, Math.PI, Math.PI + angle);
-        ctx.lineWidth = 25;
-        ctx.strokeStyle = color;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-
-        ctx.fillStyle = color;
-        ctx.font = 'bold 40px Poppins';
-        ctx.textAlign = 'center';
-        ctx.fillText(aqi, 125, 120);
-
-        ctx.fillStyle = '#555';
-        ctx.font = 'normal 16px Poppins';
-        ctx.fillText(label, 125, 150);
-    }
-
-    function getAqiInfo(aqi) {
-        if (aqi <= 50) return { color: '#00e400', label: 'Good' };
-        if (aqi <= 100) return { color: '#ffff00', label: 'Moderate' };
-        if (aqi <= 150) return { color: '#ff7e00', label: 'Unhealthy (SG)' };
-        if (aqi <= 200) return { color: '#ff0000', label: 'Unhealthy' };
-        if (aqi <= 300) return { color: '#8f3f97', label: 'Very Unhealthy' };
-        return { color: '#7e0023', label: 'Hazardous' };
+    if (!response.ok) {
+      throw new Error('Connection interrupted.');
     }
 
-    function showLoading() {
-        if (searchButton) {
-            searchButton.disabled = true;   // <--- This is the fix from before
-            searchButton.textContent = 'Checking...';
+    const data = await response.json();
+    updateDashboard(data);
+  } catch (err) {
+    console.error(err);
+    els.aiSynopsis.innerHTML =
+      '<span style="color: #ef4444">Connection interrupted. Cannot fetch telemetry.</span>';
+    els.aiChecklist.innerHTML = '';
+    els.aiAdvice.textContent = '--';
+    els.dashboard.classList.add('active');
+  } finally {
+    els.loader.style.display = 'none';
+  }
+}
+
+function updateDashboard(data) {
+  const aqiData = data.aqi || {};
+  const aqi = aqiData.aqi || 0;
+  els.aqiVal.textContent = aqi;
+
+  let color;
+  let label;
+
+  if (aqi <= 50) {
+    color = '#78a183';
+    label = aqiLabels.good;
+  } else if (aqi <= 100) {
+    color = '#d4b472';
+    label = aqiLabels.moderate;
+  } else if (aqi <= 150) {
+    color = '#d48c82';
+    label = aqiLabels.unhealthySg;
+  } else if (aqi <= 200) {
+    color = '#c96a6a';
+    label = aqiLabels.unhealthy;
+  } else {
+    color = '#8f779e';
+    label = aqiLabels.hazardous;
+  }
+
+  els.aqiVal.style.color = color;
+  els.aqiLbl.textContent = label;
+  els.aqiLbl.style.color = color;
+  els.aqiLbl.style.borderColor = color;
+
+  const fillWidth = (val, max) => `${Math.min((val / max) * 100, 100)}%`;
+
+  els.valPm25.textContent = `${aqiData.pm2_5} µg/m³`;
+  els.barPm25.style.width = fillWidth(aqiData.pm2_5, 100);
+
+  els.valPm10.textContent = `${aqiData.pm10} µg/m³`;
+  els.barPm10.style.width = fillWidth(aqiData.pm10, 150);
+
+  els.valO3.textContent = `${aqiData.ozone} µg/m³`;
+  els.barO3.style.width = fillWidth(aqiData.ozone, 200);
+
+  els.valCo.textContent = `${aqiData.co} µg/m³`;
+  els.barCo.style.width = fillWidth(aqiData.co, 5000);
+
+  const ai = data.aiData || {};
+
+  const rawSynopsis = ai.synopsis || 'Atmospheric data retrieved. Summary unavailable.';
+  els.aiSynopsis.innerHTML = rawSynopsis.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  els.aiChecklist.innerHTML = (ai.checklist || [])
+    .map((item) => `<li><div class="organic-check-icon"></div> ${item}</li>`)
+    .join('');
+
+  els.aiAdvice.textContent =
+    ai.ecoAdvice || 'Connect with nature today while being mindful of the air quality.';
+
+  els.statTemp.textContent = `${data.weather.temp}°C`;
+  els.statHum.textContent = `${data.weather.humidity}%`;
+  els.statUv.textContent = data.weather.uv;
+
+  lastData = {
+    times: data.weather.hourly_time,
+    temps: data.weather.hourly_temp,
+    aqis: data.aqi.hourly_aqi
+  };
+
+  renderChart(lastData.times, lastData.temps, lastData.aqis);
+  els.dashboard.classList.add('active');
+}
+
+function renderChart(timesArr, tempsArr, aqisArr) {
+  if (!timesArr) {
+    return;
+  }
+
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  const times = timesArr.slice(0, 24).map((t) => `${new Date(t).getHours()}:00`);
+  const temps = tempsArr.slice(0, 24);
+  const aqis = aqisArr.slice(0, 24);
+
+  const isDawn = currentTheme === 'dawn';
+  const textColor = isDawn ? '#7a7d74' : '#8b9088';
+  const gridColor = isDawn ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)';
+
+  const gradientTemp = els.ctx.createLinearGradient(0, 0, 0, 300);
+  gradientTemp.addColorStop(0, isDawn ? 'rgba(110, 145, 160, 0.4)' : 'rgba(143, 185, 168, 0.4)');
+  gradientTemp.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+  const gradientAqi = els.ctx.createLinearGradient(0, 0, 0, 300);
+  gradientAqi.addColorStop(0, isDawn ? 'rgba(212, 140, 130, 0.4)' : 'rgba(196, 150, 175, 0.4)');
+  gradientAqi.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+  Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+  Chart.defaults.color = textColor;
+
+  chartInstance = new Chart(els.ctx, {
+    type: 'line',
+    data: {
+      labels: times,
+      datasets: [
+        {
+          label: 'Temp',
+          data: temps,
+          borderColor: isDawn ? '#6e91a0' : '#8fb9a8',
+          backgroundColor: gradientTemp,
+          yAxisID: 'y',
+          tension: 0.5,
+          borderWidth: 3,
+          pointRadius: 0,
+          fill: true
+        },
+        {
+          label: 'AQI',
+          data: aqis,
+          borderColor: isDawn ? '#d48c82' : '#c496af',
+          backgroundColor: gradientAqi,
+          yAxisID: 'y1',
+          tension: 0.5,
+          borderWidth: 3,
+          pointRadius: 0,
+          fill: true
         }
-        if (loadingSpinner) {
-            loadingSpinner.classList.remove('hidden');
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { usePointStyle: true, boxWidth: 8 }
         }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          grid: { color: gridColor, drawBorder: false }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          grid: { drawOnChartArea: false }
+        }
+      }
     }
+  });
+}
 
-    function hideLoading() {
-        if (searchButton) {
-            searchButton.disabled = false;
-            searchButton.textContent = 'Check Pulse';
-        }
-        if (loadingSpinner) {
-            loadingSpinner.classList.add('hidden');
-        }
-    }
-
-    function clearUI() {
-        if (aiSummaryCard) {
-            aiSummaryCard.classList.add('hidden');
-        }
-        if (rawDataCard) {
-            rawDataCard.classList.add('hidden');
-        }
-        if (gaugeContainer) {
-            gaugeContainer.classList.add('hidden');
-        }
-        if (dataList) {
-            dataList.innerHTML = '';
-        }
-    }
-}); // End of DOMContentLoaded
-
-
+init();
