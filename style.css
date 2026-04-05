@@ -132,6 +132,15 @@ h3 {
   padding: 2rem 1.5rem;
   position: relative;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .glass-panel {
@@ -560,23 +569,49 @@ header p {
   }
 }
 
+/* Footer & Socials */
 .app-footer {
-  text-align: center;
-  margin-top: 4rem;
+  width: 100%;
+  margin-top: auto;
   padding-top: 2rem;
+  padding-bottom: 1rem;
   border-top: 1px solid var(--glass-border);
   color: var(--text-muted);
-  font-weight: 500;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.app-footer .octopus {
-  display: inline-block;
-  transition: transform 0.3s ease;
+.social-links {
+  display: flex;
+  gap: 1.25rem;
 }
 
-.app-footer:hover .octopus {
-  transform: translateY(-4px) scale(1.2) rotate(10deg);
+.social-links a {
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-links a:hover {
+  color: var(--accent);
+  transform: translateY(-3px);
+}
+
+.social-links svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+@media (max-width: 600px) {
+  .app-footer { justify-content: center; text-align: center; }
 }
 
 @media (max-width: 900px) {

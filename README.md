@@ -62,7 +62,3 @@ Smooth, liquid charts (powered by **Chart.js**) visualizing:
 ### APIs & Services
 - Google Gemini API (AI analysis & structuring)
 - Open-Meteo API (Geocoding, weather & air quality data)
-
----
-
-## 🐙 Built For Octoverse Hackathon

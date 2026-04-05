@@ -1,4 +1,3 @@
-// App state
 let currentTheme = localStorage.getItem('organicTheme') || 'dawn';
 let debounceTimer;
 let chartInstance = null;
@@ -42,6 +41,20 @@ const els = {
   statUv: document.getElementById('stat-uv'),
   ctx: document.getElementById('trendChart').getContext('2d')
 };
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => {
+    const replacements = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
+
+    return replacements[character];
+  });
+}
 
 function init() {
   setTheme(currentTheme);
@@ -99,9 +112,9 @@ function renderDropdown(results) {
   els.dropdown.innerHTML = results
     .map(
       (city) => `
-      <div class="autocomplete-item" data-lat="${city.latitude}" data-lon="${city.longitude}" data-name="${city.name}">
-        <span class="autocomplete-city">${city.name}</span>
-        <span class="autocomplete-admin">${city.admin1 || ''}, ${city.country || ''}</span>
+      <div class="autocomplete-item" data-lat="${city.latitude}" data-lon="${city.longitude}" data-name="${escapeHtml(city.name)}">
+        <span class="autocomplete-city">${escapeHtml(city.name)}</span>
+        <span class="autocomplete-admin">${escapeHtml(city.admin1 || '')}, ${escapeHtml(city.country || '')}</span>
       </div>
     `
     )
@@ -150,14 +163,20 @@ async function executeSearch(cityName, lat, lon) {
 }
 
 function updateDashboard(data) {
+  const weather = data.weather || {};
   const aqiData = data.aqi || {};
-  const aqi = aqiData.aqi || 0;
-  els.aqiVal.textContent = aqi;
+  const aqi = Number(aqiData.aqi);
+  const hasAqi = Number.isFinite(aqi);
+
+  els.aqiVal.textContent = hasAqi ? aqi : '--';
 
   let color;
   let label;
 
-  if (aqi <= 50) {
+  if (!hasAqi) {
+    color = 'var(--text-muted)';
+    label = '--';
+  } else if (aqi <= 50) {
     color = '#78a183';
     label = aqiLabels.good;
   } else if (aqi <= 100) {
@@ -180,39 +199,43 @@ function updateDashboard(data) {
   els.aqiLbl.style.borderColor = color;
 
   const fillWidth = (val, max) => `${Math.min((val / max) * 100, 100)}%`;
+  const pm25 = Number(aqiData.pm2_5 ?? 0);
+  const pm10 = Number(aqiData.pm10 ?? 0);
+  const ozone = Number(aqiData.ozone ?? 0);
+  const carbonMonoxide = Number(aqiData.co ?? 0);
 
-  els.valPm25.textContent = `${aqiData.pm2_5} µg/m³`;
-  els.barPm25.style.width = fillWidth(aqiData.pm2_5, 100);
+  els.valPm25.textContent = aqiData.pm2_5 != null ? `${pm25} µg/m³` : '--';
+  els.barPm25.style.width = fillWidth(pm25, 100);
 
-  els.valPm10.textContent = `${aqiData.pm10} µg/m³`;
-  els.barPm10.style.width = fillWidth(aqiData.pm10, 150);
+  els.valPm10.textContent = aqiData.pm10 != null ? `${pm10} µg/m³` : '--';
+  els.barPm10.style.width = fillWidth(pm10, 150);
 
-  els.valO3.textContent = `${aqiData.ozone} µg/m³`;
-  els.barO3.style.width = fillWidth(aqiData.ozone, 200);
+  els.valO3.textContent = aqiData.ozone != null ? `${ozone} µg/m³` : '--';
+  els.barO3.style.width = fillWidth(ozone, 200);
 
-  els.valCo.textContent = `${aqiData.co} µg/m³`;
-  els.barCo.style.width = fillWidth(aqiData.co, 5000);
+  els.valCo.textContent = aqiData.co != null ? `${carbonMonoxide} µg/m³` : '--';
+  els.barCo.style.width = fillWidth(carbonMonoxide, 5000);
 
   const ai = data.aiData || {};
 
   const rawSynopsis = ai.synopsis || 'Atmospheric data retrieved. Summary unavailable.';
-  els.aiSynopsis.innerHTML = rawSynopsis.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  els.aiSynopsis.innerHTML = escapeHtml(rawSynopsis).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
   els.aiChecklist.innerHTML = (ai.checklist || [])
-    .map((item) => `<li><div class="organic-check-icon"></div> ${item}</li>`)
+    .map((item) => `<li><div class="organic-check-icon"></div> ${escapeHtml(item)}</li>`)
     .join('');
 
   els.aiAdvice.textContent =
     ai.ecoAdvice || 'Connect with nature today while being mindful of the air quality.';
 
-  els.statTemp.textContent = `${data.weather.temp}°C`;
-  els.statHum.textContent = `${data.weather.humidity}%`;
-  els.statUv.textContent = data.weather.uv;
+  els.statTemp.textContent = weather.temp != null ? `${weather.temp}°C` : '--';
+  els.statHum.textContent = weather.humidity != null ? `${weather.humidity}%` : '--';
+  els.statUv.textContent = weather.uv != null ? weather.uv : '--';
 
   lastData = {
-    times: data.weather.hourly_time,
-    temps: data.weather.hourly_temp,
-    aqis: data.aqi.hourly_aqi
+    times: weather.hourly_time,
+    temps: weather.hourly_temp,
+    aqis: aqiData.hourly_aqi
   };
 
   renderChart(lastData.times, lastData.temps, lastData.aqis);
@@ -220,7 +243,7 @@ function updateDashboard(data) {
 }
 
 function renderChart(timesArr, tempsArr, aqisArr) {
-  if (!timesArr) {
+  if (!timesArr || !tempsArr || !aqisArr) {
     return;
   }
 
